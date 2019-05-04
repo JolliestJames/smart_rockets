@@ -4,13 +4,28 @@ class Rocket {
   PVector velocity;
   PVector acceleration;
 
+  DNA dna;
+
   float size;
+  float fitness;
+  int geneCounter = 0;
 
   Rocket(PVector location) {
     acceleration = new PVector();
     velocity = new PVector();
     position = location.get();
     size = 4;
+  }
+
+  void run() {
+    applyForce(dna.genes[geneCounter]);
+    ++geneCounter;
+    update();
+  }
+
+  float fitness() {
+    float distance = PVector.dist(position, target);
+    return fitness = pow(1.0 / distance, 2);
   }
 
   void applyForce(PVector f) {
