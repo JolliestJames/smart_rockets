@@ -7,7 +7,7 @@ class DNA {
 
     for(int i = 0; i < genes.length; i++) {
       genes[i] = PVector.random2D();
-      genes.mult(random[0], maxForce);
+      genes[i].mult(random[0], maxForce);
     }
   }
 }
