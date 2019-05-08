@@ -16,32 +16,40 @@ public class smart_rockets extends PApplet {
 
 int lifeCounter;
 Population population;
-
 final int LIFETIME = 360;
-
-PVector target;
+// PVector target;
+Obstacle target;
+ArrayList<Obstacle> obstacles;
 
 public void setup() {
   
   float mutationRate = 0.01f;
   lifeCounter = 0;
-  target = new PVector(width/2, 24);
+
+  target = new Obstacle(width/2-12, 24, 24, 24);
   population = new Population(mutationRate, 50);
+
+  obstacles = new ArrayList<Obstacle>();
+  obstacles.add(new Obstacle(width/2-100, height/2, 200, 10));
 }
 
 public void draw() {
   background(255);
-  fill(0);
-  ellipse(target.x, target.y, 24, 24);
+
+  target.display();
 
   if (lifeCounter < LIFETIME) {
-    population.live();
+    population.live(obstacles);
     lifeCounter++;
   } else {
     lifeCounter = 0;
     population.fitness();
     population.selection();
     population.reproduction();
+  }
+
+  for (Obstacle obs : obstacles) {
+    obs.display();
   }
 
   fill(0);
@@ -90,6 +98,32 @@ class DNA {
     }
   }
 }
+class Obstacle {
+  PVector pos;
+  float w, h;
+
+  Obstacle(float x, float y, float _w, float _h) {
+    pos = new PVector(x, y);
+    w = _w;
+    h = _h;
+  }
+
+  public void display() {
+    stroke(0);
+    fill(175);
+    strokeWeight(2);
+    rectMode(CORNER);
+    rect(pos.x, pos.y, w, h);
+  }
+
+  public boolean contains(PVector v) {
+    if (v.x > pos.x && v.x < pos.x + w && v.y > pos.y && v.y < pos.y + h) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
 class Population {
   float mutationRate;
   Rocket[] population;
@@ -107,9 +141,9 @@ class Population {
     }
   }
 
-  public void live() {
+  public void live(ArrayList<Obstacle> os) {
     for(int i = 0; i < population.length; i++) {
-      population[i].run();
+      population[i].run(os);
     }
   }
 
@@ -139,7 +173,7 @@ class Population {
       int b = PApplet.parseInt(random(matingPool.size()));
       Rocket partnerA = matingPool.get(a);
       Rocket partnerB = matingPool.get(b);
-      DNA aDNA = partnerA.dna(); 
+      DNA aDNA = partnerA.dna();
       DNA bDNA = partnerB.dna();
       DNA child = aDNA.crossover(bDNA);
       child.mutate(mutationRate);
@@ -178,6 +212,8 @@ class Rocket {
   float fitness;
   int geneCounter = 0;
 
+  boolean stopped = false;
+
   Rocket(PVector location, DNA _dna) {
     acceleration = new PVector();
     velocity = new PVector();
@@ -186,18 +222,20 @@ class Rocket {
     dna = _dna;
   }
 
-  public void run() {
-    if (!reachedTarget()) {
+  public void run(ArrayList<Obstacle> os) {
+    if (!reachedTarget() && !stopped) {
       applyForce(dna.genes[geneCounter]);
       geneCounter = (geneCounter + 1) % dna.genes.length;
       update();
+      obstacles(os);
     }
     display();
   }
 
   public float fitness() {
-    float distance = dist(position.x, position.y, target.x, target.y);
+    float distance = dist(position.x, position.y, target.pos.x, target.pos.y);
     fitness = pow(1.0f / distance, 2);
+    if (stopped) { fitness *= 0.1f; }
     return fitness;
   }
 
@@ -206,9 +244,7 @@ class Rocket {
   }
 
   public boolean reachedTarget() {
-    float distance = dist(position.x, position.y, target.x, target.y);
-
-    if (distance < 12) {
+    if (target.contains(position)) {
       return true;
     } else {
       return false;
@@ -219,6 +255,14 @@ class Rocket {
     velocity.add(acceleration);
     position.add(velocity);
     acceleration.mult(0);
+  }
+
+  public void obstacles(ArrayList<Obstacle> os) {
+    for (Obstacle obs : os) {
+      if(obs.contains(position)) {
+        stopped = true;
+      }
+    }
   }
 
   public void display() {

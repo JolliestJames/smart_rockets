@@ -10,6 +10,8 @@ class Rocket {
   float fitness;
   int geneCounter = 0;
 
+  boolean stopped = false;
+
   Rocket(PVector location, DNA _dna) {
     acceleration = new PVector();
     velocity = new PVector();
@@ -18,18 +20,20 @@ class Rocket {
     dna = _dna;
   }
 
-  void run() {
-    if (!reachedTarget()) {
+  void run(ArrayList<Obstacle> os) {
+    if (!reachedTarget() && !stopped) {
       applyForce(dna.genes[geneCounter]);
       geneCounter = (geneCounter + 1) % dna.genes.length;
       update();
+      obstacles(os);
     }
     display();
   }
 
   float fitness() {
-    float distance = dist(position.x, position.y, target.x, target.y);
+    float distance = dist(position.x, position.y, target.pos.x, target.pos.y);
     fitness = pow(1.0 / distance, 2);
+    if (stopped) { fitness *= 0.1; }
     return fitness;
   }
 
@@ -38,9 +42,7 @@ class Rocket {
   }
 
   boolean reachedTarget() {
-    float distance = dist(position.x, position.y, target.x, target.y);
-
-    if (distance < 12) {
+    if (target.contains(position)) {
       return true;
     } else {
       return false;
@@ -51,6 +53,14 @@ class Rocket {
     velocity.add(acceleration);
     position.add(velocity);
     acceleration.mult(0);
+  }
+
+  void obstacles(ArrayList<Obstacle> os) {
+    for (Obstacle obs : os) {
+      if(obs.contains(position)) {
+        stopped = true;
+      }
+    }
   }
 
   void display() {
